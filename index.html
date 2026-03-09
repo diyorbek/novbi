@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Novbi - Keyboard Fun!</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Bubblegum+Sans&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Fredoka', sans-serif;
+        overflow: hidden;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        cursor: none;
+      }
+
+      #canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+
+      .shape {
+        position: fixed;
+        pointer-events: none;
+        z-index: 2;
+        animation: float 3s ease-out forwards;
+        font-size: 120px;
+        font-weight: bold;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0) scale(0.5) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-300px) scale(1.5) rotate(0deg);
+          opacity: 0;
+        }
+      }
+
+      .letter {
+        font-family: 'Bubblegum Sans', cursive;
+      }
+
+      #instructions {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+        z-index: 10;
+        font-size: 48px;
+        text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.1);
+        }
+      }
+
+      #instructions.hidden {
+        display: none;
+      }
+
+      #exitHint {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 14px;
+        z-index: 100;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        pointer-events: none;
+        z-index: 3;
+        animation: confettiFall 3s ease-out forwards;
+      }
+
+      @keyframes confettiFall {
+        0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+
+      .cursor {
+        position: fixed;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        pointer-events: none;
+        z-index: 1000;
+        transition: transform 0.1s ease;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+      }
+
+      .cursor.click {
+        transform: scale(1.5);
+      }
+
+      .trail {
+        position: fixed;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 999;
+        animation: trailFade 0.8s ease-out forwards;
+      }
+
+      @keyframes trailFade {
+        0% {
+          transform: scale(1);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <div id="instructions">
+      Press any key to start!<br />
+      <span style="font-size: 24px"
+        >Click anywhere or press Esc 5 times to exit</span
+      >
+    </div>
+    <div id="exitHint">Press ESC 5 times to exit</div>
+    <div class="cursor" id="cursor"></div>
+
+    <script>
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const instructions = document.getElementById('instructions');
+      const cursor = document.getElementById('cursor');
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      let isActive = false;
+      let escapeCount = 0;
+      let lastEscapeTime = 0;
+
+      const colors = [
+        '#FF6B6B',
+        '#4ECDC4',
+        '#45B7D1',
+        '#FFA07A',
+        '#98D8C8',
+        '#F7DC6F',
+        '#BB8FCE',
+        '#85C1E2',
+        '#FF9FF3',
+        '#54A0FF',
+        '#48DBFB',
+        '#1DD1A1',
+      ];
+
+      const shapes = ['●', '■', '▲', '★', '♥', '◆', '✿', '◉'];
+      const animals = [
+        '🐶',
+        '🐱',
+        '🐭',
+        '🐹',
+        '🐰',
+        '🦊',
+        '🐻',
+        '🐼',
+        '🐨',
+        '🐯',
+        '🦁',
+        '🐮',
+        '🐷',
+        '🐸',
+        '🐵',
+      ];
+
+      // Piano-style note mapping based on QWERTY keyboard layout
+      // Home row (ASDFGHJKL) = white keys starting from C4
+      // Top row (QWERTYUIOP) = black keys (sharps/flats)
+      const letterNotes = {
+        // Home row - white keys (C major scale)
+        A: 261.63, // C4
+        S: 293.66, // D4
+        D: 329.63, // E4
+        F: 349.23, // F4
+        G: 392.0, // G4
+        H: 440.0, // A4
+        J: 493.88, // B4
+        K: 523.25, // C5
+        L: 587.33, // D5
+        ';': 659.25, // E5
+
+        // Top row - black keys (sharps)
+        Q: 277.18, // C#4
+        W: 311.13, // D#4
+        E: 369.99, // F#4
+        R: 415.3, // G#4
+        T: 466.16, // A#4
+        Y: 554.37, // C#5
+        U: 622.25, // D#5
+        I: 698.46, // F5
+        O: 739.99, // F#5
+        P: 830.61, // G#5
+
+        // Bottom row - lower octave
+        Z: 130.81, // C3
+        X: 146.83, // D3
+        C: 164.81, // E3
+        V: 174.61, // F3
+        B: 196.0, // G3
+        N: 220.0, // A3
+        M: 246.94, // B3
+      };
+
+      // Audio context for sound effects
+      const audioContext = new (
+        window.AudioContext || window.webkitAudioContext
+      )();
+
+      function playSound(frequency) {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioContext.currentTime + 0.5,
+        );
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      }
+
+      function createShape(x, y, content, isLetter = false) {
+        const shape = document.createElement('div');
+        shape.className = isLetter ? 'shape letter' : 'shape';
+        shape.textContent = content;
+        shape.style.left = x + 'px';
+        shape.style.top = y + 'px';
+        shape.style.color = colors[Math.floor(Math.random() * colors.length)];
+        document.body.appendChild(shape);
+
+        setTimeout(() => shape.remove(), 3000);
+      }
+
+      function createConfetti(x, y) {
+        for (let i = 0; i < 20; i++) {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = x + 'px';
+          confetti.style.top = y + 'px';
+          confetti.style.backgroundColor =
+            colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDelay = Math.random() * 0.3 + 's';
+          confetti.style.transform = `translateX(${(Math.random() - 0.5) * 200}px)`;
+          document.body.appendChild(confetti);
+
+          setTimeout(() => confetti.remove(), 3000);
+        }
+      }
+
+      function drawBackground() {
+        const gradient = ctx.createLinearGradient(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function handleKey(e) {
+        if (!isActive) {
+          isActive = true;
+          instructions.classList.add('hidden');
+        }
+
+        // Check for escape key to exit
+        if (e.key === 'Escape') {
+          const now = Date.now();
+          if (now - lastEscapeTime < 1000) {
+            escapeCount++;
+          } else {
+            escapeCount = 1;
+          }
+          lastEscapeTime = now;
+
+          if (escapeCount >= 5) {
+            document.exitFullscreen?.();
+            alert('Thanks for playing! Refresh the page to play again.');
+            return;
+          }
+        }
+
+        e.preventDefault();
+
+        const x = Math.random() * (window.innerWidth - 200);
+        const y = Math.random() * (window.innerHeight - 200);
+
+        // Play sound - use mapped note for letters, random for other keys
+        let frequency;
+        const upperKey = e.key.toUpperCase();
+        if (letterNotes[upperKey] || letterNotes[e.key]) {
+          frequency = letterNotes[upperKey] || letterNotes[e.key];
+        } else {
+          frequency = 200 + Math.random() * 800;
+        }
+        playSound(frequency);
+
+        // Create letter or number
+        if (e.key.length === 1 && e.key.match(/[a-zA-Z0-9]/)) {
+          createShape(x, y, e.key.toUpperCase(), true);
+        } else {
+          // Create random shape or emoji
+          const useEmoji = Math.random() > 0.5;
+          const content = useEmoji
+            ? animals[Math.floor(Math.random() * animals.length)]
+            : shapes[Math.floor(Math.random() * shapes.length)];
+          createShape(x, y, content);
+        }
+
+        // Add confetti on space or enter
+        if (e.key === ' ' || e.key === 'Enter') {
+          createConfetti(x + 60, y + 60);
+        }
+      }
+
+      function handleClick(e) {
+        if (!isActive) {
+          isActive = true;
+          instructions.classList.add('hidden');
+          return;
+        }
+
+        e.preventDefault();
+
+        // Play sound
+        playSound(300 + Math.random() * 600);
+
+        // Create shape at click location
+        const emoji = animals[Math.floor(Math.random() * animals.length)];
+        createShape(e.clientX - 60, e.clientY - 60, emoji);
+        createConfetti(e.clientX, e.clientY);
+
+        // Cursor effect
+        cursor.classList.add('click');
+        setTimeout(() => cursor.classList.remove('click'), 200);
+      }
+
+      // Track cursor
+      let lastTrailTime = 0;
+      document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX - 20 + 'px';
+        cursor.style.top = e.clientY - 20 + 'px';
+
+        // Create trail effect
+        const now = Date.now();
+        if (isActive && now - lastTrailTime > 50) {
+          lastTrailTime = now;
+          const trail = document.createElement('div');
+          trail.className = 'trail';
+          trail.style.left = e.clientX - 10 + 'px';
+          trail.style.top = e.clientY - 10 + 'px';
+          trail.style.backgroundColor =
+            colors[Math.floor(Math.random() * colors.length)];
+          document.body.appendChild(trail);
+
+          setTimeout(() => trail.remove(), 800);
+        }
+      });
+
+      // Event listeners
+      document.addEventListener('keydown', handleKey);
+      document.addEventListener('click', handleClick);
+
+      // Prevent context menu
+      document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      // Handle window resize
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawBackground();
+      });
+
+      // Enter fullscreen on first interaction
+      let hasEnteredFullscreen = false;
+      function enterFullscreen() {
+        if (
+          !hasEnteredFullscreen &&
+          document.documentElement.requestFullscreen
+        ) {
+          document.documentElement.requestFullscreen();
+          hasEnteredFullscreen = true;
+        }
+      }
+      document.addEventListener('keydown', enterFullscreen, { once: true });
+      document.addEventListener('click', enterFullscreen, { once: true });
+
+      // Initial draw
+      drawBackground();
+    </script>
+  </body>
+</html>
