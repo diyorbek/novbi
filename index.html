@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>Novbi - Keyboard Fun!</title>
     <link rel="icon" href="favicon.ico" />
     <link
@@ -19,7 +22,6 @@
       body {
         font-family: 'Fredoka', sans-serif;
         overflow: hidden;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         cursor: none;
         touch-action: none;
         -webkit-user-select: none;
@@ -66,10 +68,10 @@
         left: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
-        color: white;
+        color: #ccc;
         z-index: 10;
         font-size: 48px;
-        text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+        /* text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5); */
         animation: pulse 2s infinite;
       }
 
@@ -91,10 +93,9 @@
         position: fixed;
         bottom: 20px;
         right: 20px;
-        color: rgba(255, 255, 255, 0.3);
+        color: #ccc;
         font-size: 14px;
         z-index: 100;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
       }
 
       .confetti {
@@ -304,19 +305,6 @@
         }
       }
 
-      function drawBackground() {
-        const gradient = ctx.createLinearGradient(
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-        );
-        gradient.addColorStop(0, '#667eea');
-        gradient.addColorStop(1, '#764ba2');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
       function handleKey(e) {
         if (!isActive) {
           isActive = true;
@@ -470,8 +458,12 @@
       document.addEventListener('keydown', handleKey);
       document.addEventListener('click', handleClick);
       document.addEventListener('touchstart', handleTouch, { passive: false });
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+      document.addEventListener('touchmove', handleTouchMove, {
+        passive: false,
+      });
+      document.addEventListener('touchend', (e) => e.preventDefault(), {
+        passive: false,
+      });
 
       // Prevent context menu and long-press popups
       document.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -496,10 +488,9 @@
       }
       document.addEventListener('keydown', enterFullscreen, { once: true });
       document.addEventListener('click', enterFullscreen, { once: true });
-      document.addEventListener('touchstart', enterFullscreen, { once: true });
-
-      // Initial draw
-      drawBackground();
+      document.addEventwewListener('touchstart', enterFullscreen, {
+        once: true,
+      });
     </script>
   </body>
 </html>
