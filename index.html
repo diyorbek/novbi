@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Novbi - Keyboard Fun!</title>
     <link rel="icon" href="favicon.ico" />
     <link
@@ -21,6 +21,9 @@
         overflow: hidden;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         cursor: none;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       #canvas {
@@ -155,9 +158,9 @@
   <body>
     <canvas id="canvas"></canvas>
     <div id="instructions">
-      Press any key to start!<br />
+      Press any key or tap to start!<br />
       <span style="font-size: 24px"
-        >Click anywhere or press Esc 5 times to exit</span
+        >Tap, click, or press keys to play!<br />Press Esc 5 times to exit</span
       >
     </div>
     <div id="exitHint">Press ESC 5 times to exit</div>
@@ -414,11 +417,63 @@
         }
       });
 
+      // Handle touch events (multi-touch support)
+      function handleTouch(e) {
+        e.preventDefault();
+
+        if (!isActive) {
+          isActive = true;
+          instructions.classList.add('hidden');
+        }
+
+        // Process every touch point — kids slap with multiple fingers
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const touch = e.changedTouches[i];
+          const x = touch.clientX;
+          const y = touch.clientY;
+
+          // Play a slightly different sound per finger
+          playSound(300 + Math.random() * 600);
+
+          // Create shape at each touch point
+          const emoji = animals[Math.floor(Math.random() * animals.length)];
+          createShape(x - 60, y - 60, emoji);
+          createConfetti(x, y);
+        }
+      }
+
+      function handleTouchMove(e) {
+        e.preventDefault();
+
+        if (!isActive) return;
+
+        const now = Date.now();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const touch = e.changedTouches[i];
+
+          // Trail effect for each finger
+          if (now - lastTrailTime > 50) {
+            lastTrailTime = now;
+            const trail = document.createElement('div');
+            trail.className = 'trail';
+            trail.style.left = touch.clientX - 10 + 'px';
+            trail.style.top = touch.clientY - 10 + 'px';
+            trail.style.backgroundColor =
+              colors[Math.floor(Math.random() * colors.length)];
+            document.body.appendChild(trail);
+            setTimeout(() => trail.remove(), 800);
+          }
+        }
+      }
+
       // Event listeners
       document.addEventListener('keydown', handleKey);
       document.addEventListener('click', handleClick);
+      document.addEventListener('touchstart', handleTouch, { passive: false });
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
 
-      // Prevent context menu
+      // Prevent context menu and long-press popups
       document.addEventListener('contextmenu', (e) => e.preventDefault());
 
       // Handle window resize
@@ -441,6 +496,7 @@
       }
       document.addEventListener('keydown', enterFullscreen, { once: true });
       document.addEventListener('click', enterFullscreen, { once: true });
+      document.addEventListener('touchstart', enterFullscreen, { once: true });
 
       // Initial draw
       drawBackground();
