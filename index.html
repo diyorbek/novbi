@@ -41,7 +41,7 @@
         position: fixed;
         pointer-events: none;
         z-index: 2;
-        animation: float 3s ease-out forwards;
+        animation: float 3s linear;
         font-size: 120px;
         font-weight: bold;
         text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
@@ -49,11 +49,14 @@
 
       @keyframes float {
         0% {
-          transform: translateY(0) scale(0.5) rotate(0deg);
+          transform: translateY(0) scale(0.5);
+          opacity: 1;
+        }
+        70% {
           opacity: 1;
         }
         100% {
-          transform: translateY(-300px) scale(1.5) rotate(0deg);
+          transform: translateY(-50px) scale(1);
           opacity: 0;
         }
       }
@@ -96,26 +99,6 @@
         color: #ccc;
         font-size: 14px;
         z-index: 100;
-      }
-
-      .confetti {
-        position: fixed;
-        width: 10px;
-        height: 10px;
-        pointer-events: none;
-        z-index: 3;
-        animation: confettiFall 3s ease-out forwards;
-      }
-
-      @keyframes confettiFall {
-        0% {
-          transform: translateY(0) rotate(0deg);
-          opacity: 1;
-        }
-        100% {
-          transform: translateY(100vh) rotate(720deg);
-          opacity: 0;
-        }
       }
 
       .cursor {
@@ -289,22 +272,6 @@
         setTimeout(() => shape.remove(), 3000);
       }
 
-      function createConfetti(x, y) {
-        for (let i = 0; i < 20; i++) {
-          const confetti = document.createElement('div');
-          confetti.className = 'confetti';
-          confetti.style.left = x + 'px';
-          confetti.style.top = y + 'px';
-          confetti.style.backgroundColor =
-            colors[Math.floor(Math.random() * colors.length)];
-          confetti.style.animationDelay = Math.random() * 0.3 + 's';
-          confetti.style.transform = `translateX(${(Math.random() - 0.5) * 200}px)`;
-          document.body.appendChild(confetti);
-
-          setTimeout(() => confetti.remove(), 3000);
-        }
-      }
-
       function handleKey(e) {
         if (!isActive) {
           isActive = true;
@@ -354,11 +321,6 @@
             : shapes[Math.floor(Math.random() * shapes.length)];
           createShape(x, y, content);
         }
-
-        // Add confetti on space or enter
-        if (e.key === ' ' || e.key === 'Enter') {
-          createConfetti(x + 60, y + 60);
-        }
       }
 
       function handleClick(e) {
@@ -376,7 +338,6 @@
         // Create shape at click location
         const emoji = animals[Math.floor(Math.random() * animals.length)];
         createShape(e.clientX - 60, e.clientY - 60, emoji);
-        createConfetti(e.clientX, e.clientY);
 
         // Cursor effect
         cursor.classList.add('click');
@@ -426,7 +387,6 @@
           // Create shape at each touch point
           const emoji = animals[Math.floor(Math.random() * animals.length)];
           createShape(x - 60, y - 60, emoji);
-          createConfetti(x, y);
         }
       }
 
